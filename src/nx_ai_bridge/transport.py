@@ -62,7 +62,14 @@ def make_request(tool: str, params: dict | None) -> dict:
 
 
 def _receiver_hint(cfg: Config) -> str:
-    return START_RECEIVER_HINT.format(journal=cfg.receiver_dir / "NxAiBridgeReceiver.cs")
+    journal = cfg.receiver_dir / "NxAiBridgeReceiver.cs"
+    if not journal.is_file():
+        # e.g. started through `uvx` without install.ps1: put the journals where the hint says they are
+        try:
+            install_receiver(cfg)
+        except (BridgeError, OSError):
+            pass
+    return START_RECEIVER_HINT.format(journal=journal)
 
 
 def read_receiver_state(cfg: Config) -> dict | None:

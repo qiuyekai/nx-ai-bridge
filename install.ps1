@@ -38,10 +38,13 @@ if (-not $HomeDir) {
 New-Item -ItemType Directory -Force -Path $HomeDir | Out-Null
 
 # ---------------------------------------------------------------- 1. find NX
+# Join-Path fails for drives that do not exist (e.g. "D:\Siemens" on a PC without D:), so combine as plain strings.
+function Join-Safe([string]$a, [string]$b) { return [System.IO.Path]::Combine($a, $b) }
+
 function Test-NxDir([string]$dir) {
     if (-not $dir) { return $false }
     foreach ($sub in @("NXBIN", "UGII")) {
-        if (Test-Path (Join-Path (Join-Path $dir $sub) "ugraf.exe")) { return $true }
+        if (Test-Path -LiteralPath (Join-Safe (Join-Safe $dir $sub) "ugraf.exe") -ErrorAction SilentlyContinue) { return $true }
     }
     return $false
 }
@@ -67,8 +70,8 @@ function Find-Nx {
     }
     foreach ($root in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, "C:\Siemens", "D:\Siemens", "D:\Program Files", "E:\Siemens")) {
         if (-not $root) { continue }
-        foreach ($parent in @($root, (Join-Path $root "Siemens"), (Join-Path $root "UGS"))) {
-            if (Test-Path $parent) {
+        foreach ($parent in @($root, (Join-Safe $root "Siemens"), (Join-Safe $root "UGS"))) {
+            if (Test-Path -LiteralPath $parent -ErrorAction SilentlyContinue) {
                 Get-ChildItem -Path $parent -Directory -Filter "NX*" -ErrorAction SilentlyContinue |
                     Sort-Object Name | ForEach-Object { [void]$candidates.Add($_.FullName) }
             }
@@ -83,9 +86,9 @@ $runJournal = $null
 $nxVersion = $null
 if ($nx) {
     foreach ($sub in @("NXBIN", "UGII")) {
-        $cand = Join-Path (Join-Path $nx $sub) "run_journal.exe"
+        $cand = Join-Safe (Join-Safe $nx $sub) "run_journal.exe"
         if ((-not $runJournal) -and (Test-Path $cand)) { $runJournal = $cand }
-        $ugraf = Join-Path (Join-Path $nx $sub) "ugraf.exe"
+        $ugraf = Join-Safe (Join-Safe $nx $sub) "ugraf.exe"
         if ((-not $nxVersion) -and (Test-Path $ugraf)) {
             try { $nxVersion = (Get-Item $ugraf).VersionInfo.ProductVersion } catch { }
         }

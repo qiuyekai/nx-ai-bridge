@@ -141,3 +141,10 @@ def test_batch_reports_silent_failure(home):
     with pytest.raises(BridgeError) as exc:
         transport.send(make_request("nx_status", {}), 5)
     assert exc.value.code == "BATCH_FAILED"
+
+
+def test_hint_installs_the_journal_it_points_to(home):
+    resp = BridgeClient(Config(home=home, transport="tcp", port=1)).call("nx_status")
+    assert resp["error"]["code"] == "RECEIVER_NOT_RUNNING"
+    journal = home / "nx_receiver" / "NxAiBridgeReceiver.cs"
+    assert str(journal) in resp["error"]["hint"] and journal.is_file()
