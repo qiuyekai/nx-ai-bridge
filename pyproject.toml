@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nx-ai-bridge"
+version = "0.1.0a1"
+description = "Let any AI tool (Claude, Cursor, Codex, Gemini CLI, ...) drive Siemens NX modeling through MCP or a CLI. ALPHA - not yet verified on a real NX installation."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = ["siemens-nx", "unigraphics", "cad", "mcp", "nxopen", "ai"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
+# The CLI has no third-party dependencies. The MCP server needs the `mcp` SDK.
+dependencies = ["mcp>=1.2"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-timeout>=2.3"]
+
+[project.scripts]
+nx-ai-bridge = "nx_ai_bridge.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nx_ai_bridge"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"nx_receiver" = "nx_ai_bridge/_nx_receiver"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "nx_receiver", "tests", "docs", "README.md", "README.zh-CN.md", "AGENTS.md", "LICENSE", "install.ps1", "selfcheck.ps1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 60
