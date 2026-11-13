@@ -71,6 +71,18 @@ jobs:
           .\selfcheck.ps1 -HomeDir "$PWD\build\install-home" -NoPause
           if (-not (Test-Path build\install-home\reports\env-report.json)) { Write-Error "selfcheck.ps1 wrote no env report"; exit 1 }
           Get-Content build\install-home\reports\env-report.json
+      - name: install.ps1 end-to-end (creates a venv, then the installed CLI talks to the mock)
+        shell: powershell
+        run: |
+          $summary = (.\install.ps1 -HomeDir "$PWD\build\full-home" -Quiet | Out-String) | ConvertFrom-Json
+          if (-not $summary.mcp_server_command) { Write-Error "install.ps1 found no way to start the MCP server: $($summary.python)"; exit 1 }
+          $exe = $summary.mcp_server_command[0]
+          $env:NX_AI_BRIDGE_HOME = "$PWD\build\full-home"
+          $env:NX_AI_BRIDGE_TRANSPORT = "mock"
+          & $exe demo --part "$PWD\build\bracket.prt"
+          if ($LASTEXITCODE) { Write-Error "demo failed"; exit 1 }
+          $env:NX_AI_BRIDGE_TRANSPORT = "auto"
+          & $exe doctor
       - uses: actions/upload-artifact@v4
         if: always()
         with:
