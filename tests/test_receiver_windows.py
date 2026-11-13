@@ -126,6 +126,20 @@ def test_variant_fallback(fake):
     assert broken["error"]["code"] == "COMPILE_ERROR" and broken["error"]["details"]["errors"]
 
 
+def test_late_binding_helper(fake):
+    """Dyn is what makes blind-written NX code diagnosable: check its conversions on the real CLR."""
+    resp = send(fake, "dyn_demo")
+    assert resp["ok"], resp
+    r = resp["result"]
+    assert r["out_int"] == 4 and r["filled"] == 7.5 and r["ref_string"] == "n!" and r["out_array_last"] == 9
+    assert r["size"] == 4 and r["mode"] == "Fancy" and r["text"] == "hello" and r["set_any"] == "Size"
+    assert r["pick"] == "kind:Fancy" and r["sum_list"] == 6
+    assert r["over_string"] == "string" and r["over_enum"] == "enum" and r["over_int"] == "double"  # exact matches win
+    assert r["nulls"] == "nulls" and r["enum_lookup"] == "Plain" and r["try_set_missing"] is False
+    assert r["failure"] == "InvalidOperationException:inner failure"
+    assert "Size" in r["missing_candidates"]  # the typo "Sise" is answered with the real member
+
+
 def test_bad_request_is_answered(fake):
     import socket
 

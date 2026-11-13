@@ -225,7 +225,9 @@ namespace NxAiBridge
                 acc[0] = 0.99;
                 double[] props = new double[47];
                 double[] stats = new double[13];
-                Dyn.Call(Dyn.Get(UF, "Modl"), "AskMassProps3d", tags, tags.Length, 1, 3, 1.0, 1, acc, props, stats);
+                object[] args = new object[] { tags, tags.Length, 1, 3, 1.0, 1, acc, props, stats };
+                Dyn.Call(Dyn.Get(UF, "Modl"), "AskMassProps3d", args);
+                props = (double[])args[7]; // works whether the wrapper fills the array or declares it "out"
                 return new double[] { props[1] * 1000.0, props[0] * 100.0, props[3] * 10.0, props[4] * 10.0, props[5] * 10.0 };
             }
             catch (Exception ex) { first = ex; }

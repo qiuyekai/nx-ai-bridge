@@ -213,6 +213,7 @@ namespace NxAiBridge
                 StringBuilder given = new StringBuilder();
                 foreach (object a in args) { if (given.Length > 0) given.Append(", "); given.Append(DescribeValue(a)); }
                 List<string> cands = Members(t, name, 30);
+                if (cands.Count == 0) cands = Members(t, null, 80);
                 throw new ApiMismatch(TypeName(t), name,
                     "No method " + TypeName(t) + "." + name + "(" + given + ") in this NX version. Similar members: " + string.Join(" | ", cands.ToArray()), cands);
             }
@@ -311,6 +312,7 @@ namespace NxAiBridge
         private static ApiMismatch Mismatch(Type t, string name, string kind)
         {
             List<string> cands = Members(t, name, 30);
+            if (cands.Count == 0) cands = Members(t, null, 80); // nothing similar: show what the type has
             return new ApiMismatch(TypeName(t), name,
                 TypeName(t) + " has no " + kind + " '" + name + "' in this NX version. Similar members: " + string.Join(" | ", cands.ToArray()), cands);
         }
@@ -364,7 +366,23 @@ namespace NxAiBridge
             if (a == b || a.Contains(b) || (a.Length >= 4 && b.Contains(a))) return true;
             int common = 0;
             while (common < a.Length && common < b.Length && a[common] == b[common]) common++;
-            return common >= 5;
+            if (common >= 5) return true;
+            return EditDistance(a, b) <= Math.Max(1, Math.Min(a.Length, b.Length) / 4); // typos
+        }
+
+        private static int EditDistance(string a, string b)
+        {
+            int[] prev = new int[b.Length + 1];
+            int[] cur = new int[b.Length + 1];
+            for (int j = 0; j <= b.Length; j++) prev[j] = j;
+            for (int i = 1; i <= a.Length; i++)
+            {
+                cur[0] = i;
+                for (int j = 1; j <= b.Length; j++)
+                    cur[j] = Math.Min(Math.Min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1));
+                int[] swap = prev; prev = cur; cur = swap;
+            }
+            return prev[b.Length];
         }
 
         /// <summary>Human readable public members of a type; filter = null lists everything.</summary>
